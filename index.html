@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>学生请假系统</title>
+    <style>
+        :root {
+            --primary-color: #53c4c4;
+            --bg-color: #f6f6f6;
+            --text-main: #333333;
+            --text-sub: #999999;
+            --border-color: #eeeeee;
+            --success-color: #8cc474;
+            --danger-color: #e5605d;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); -webkit-tap-highlight-color: transparent; }
+        #app { max-width: 600px; margin: 0 auto; min-height: 100vh; background-color: var(--bg-color); position: relative; overflow-x: hidden; }
+        .page { display: none; width: 100%; min-height: 100vh; background-color: var(--bg-color); padding-bottom: 20px;}
+        .page.active { display: block; }
+        .nav-bar { background: #fff; padding: 10px 15px; font-size: 14px; color: var(--primary-color); cursor: pointer; border-bottom: 1px solid var(--border-color); display: flex; align-items: center;}
+        .list-container { background: #fff; }
+        .list-item { padding: 15px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; cursor: pointer; }
+        .list-item:active { background-color: #fafafa; }
+        .item-left { display: flex; flex-direction: column; gap: 8px; }
+        .item-title { font-size: 16px; color: var(--text-main); }
+        .item-time { font-size: 13px; color: var(--text-sub); }
+        .status { font-size: 13px; display: flex; align-items: center; color: #666; }
+        .status-dot { width: 6px; height: 6px; border-radius: 50%; margin-right: 4px; background-color: var(--success-color); }
+        .no-more { text-align: center; padding: 20px; font-size: 12px; color: var(--text-sub); }
+        .fab { position: fixed; bottom: 30px; right: 20px; width: 56px; height: 56px; background-color: var(--primary-color); border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 4px 10px rgba(83, 196, 196, 0.3); z-index: 100; }
+        .fab::before, .fab::after { content: ''; position: absolute; background-color: #fff; }
+        .fab::before { width: 2px; height: 24px; }
+        .fab::after { width: 24px; height: 2px; }
+        .detail-section { background: #fff; margin-bottom: 12px; padding: 10px 0; }
+        .detail-row { display: flex; padding: 8px 15px; font-size: 14px; line-height: 1.5;}
+        .detail-label { width: 100px; color: var(--text-sub); flex-shrink: 0; }
+        .detail-value { flex: 1; color: var(--text-main); word-break: break-all; }
+        .section-title { font-size: 15px; font-weight: bold; padding: 15px; border-bottom: 1px solid var(--border-color); margin-bottom: 10px;}
+        .timeline { padding: 0 15px 20px 15px; }
+        .timeline-item { display: flex; position: relative; padding-bottom: 20px; }
+        .timeline-item:last-child { padding-bottom: 0; }
+        .timeline-time { width: 80px; font-size: 12px; color: var(--text-sub); text-align: right; padding-right: 15px; }
+        .timeline-icon { width: 16px; height: 16px; background-color: var(--primary-color); border-radius: 50%; display: flex; justify-content: center; align-items: center; z-index: 2; margin-top: 2px; }
+        .timeline-icon::after { content: '✓'; color: #fff; font-size: 10px; }
+        .timeline-line { position: absolute; left: 87px; top: 18px; bottom: -2px; width: 1px; background-color: var(--border-color); z-index: 1; }
+        .timeline-item:last-child .timeline-line { display: none; }
+        .timeline-content { flex: 1; padding-left: 15px; font-size: 14px; }
+        .timeline-content .title { color: var(--text-main); margin-bottom: 4px; }
+        .timeline-content .sub { color: var(--text-sub); font-size: 13px; margin-bottom: 2px; }
+        .btn-bottom-wrapper { padding: 20px 15px; background: #fff;}
+        .btn-disabled { background-color: #f5f5f5; color: #ccc; text-align: center; padding: 12px; border-radius: 4px; font-size: 15px; }
+        .form-section { background: #fff; margin-bottom: 12px; }
+        .form-header { font-size: 13px; color: var(--text-sub); padding: 10px 15px; background: var(--bg-color); }
+        .form-row { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid var(--border-color); font-size: 14px; }
+        .form-row:last-child { border-bottom: none; }
+        .form-label { color: var(--text-main); }
+        .form-label .required { color: var(--danger-color); }
+        .form-value-group { display: flex; align-items: center; color: var(--text-sub); flex: 1; justify-content: flex-end;}
+        .arrow-right { width: 8px; height: 8px; border-top: 1.5px solid #ccc; border-right: 1.5px solid #ccc; transform: rotate(45deg); margin-left: 8px; }
+        .form-textarea-box { padding: 15px; border-bottom: 1px solid var(--border-color); }
+        .form-textarea { width: 100%; border: none; outline: none; resize: none; font-size: 14px; min-height: 80px; }
+        .word-count { text-align: right; font-size: 12px; color: var(--text-sub); }
+        .upload-section { padding: 15px; }
+        .form-input-row { display: flex; align-items: center; padding: 15px; background: #fff; margin-bottom: 15px;}
+        .form-input-row label { width: 80px; font-size: 14px; }
+        .form-input-row input { flex: 1; border: none; outline: none; font-size: 14px; color: var(--text-main); text-align: right; }
+        .submit-wrapper { padding: 15px; background: var(--bg-color); }
+        .btn-submit { background-color: var(--primary-color); color: #fff; text-align: center; padding: 12px; border-radius: 4px; font-size: 16px; cursor: pointer; }
+        #mask { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:2000; display:none; align-items:center; justify-content:center; }
+        .modal { background:#fff; width:85%; border-radius:12px; padding:25px 20px; text-align:center; }
+        .modal h3 { font-size: 18px; margin-bottom: 5px; }
+        .modal input { width:100%; margin:15px 0; padding:12px; border:1px solid #ddd; border-radius:6px; text-align:center; font-size:16px; }
+        .modal-btns { display:flex; gap:12px; margin-bottom: 15px; }
+        .btn { flex:1; padding:12px; border-radius:6px; font-size:15px; font-weight: bold; cursor: pointer; }
+        .city-page { background: #fff; height: 100vh; display: flex; flex-direction: column; }
+        .cp-tabs { display: flex; background: #fff; padding: 0 15px; border-bottom: 1px solid #eee; height: 45px; align-items: center; font-size: 14px; }
+        .cp-tab { margin-right: 15px; padding: 12px 0; color: #333; position: relative; cursor: pointer; }
+        .cp-tab.active { color: var(--primary-color); }
+        .cp-tab.active::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background: var(--primary-color); }
+        .cp-list { flex: 1; overflow-y: auto; padding: 10px 0; }
+        .cp-item { padding: 15px; border-bottom: 1px solid #f9f9f9; font-size: 15px; color: #333; display: flex; justify-content: space-between; cursor: pointer; }
+        .cp-item.selected { color: var(--primary-color); }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <div id="page1" class="page active">
+        <div class="list-container" id="list-render"></div>
+        <div class="no-more">没有更多啦~</div>
+        <div class="fab" onclick="openAuth()"></div>
+    </div>
+
+    <div id="page2" class="page">
+        <div class="nav-bar" onclick="navigateTo('page1')"> &lt; 返回列表</div>
+        <div class="detail-section" id="detail-info"></div>
+        <div class="detail-section">
+            <div class="section-title">审核流程</div>
+            <div class="timeline" id="detail-audit"></div>
+        </div>
+        <div class="btn-bottom-wrapper">
+            <div class="btn-disabled">定位销假</div>
+        </div>
+    </div>
+
+    <div id="page-edit" class="page">
+        <div class="nav-bar" onclick="navigateTo('page1')"> &lt; 返回列表</div>
+        <div class="form-header">个人信息</div>
+        <div class="form-section">
+            <div class="form-row">
+                <div class="form-label">姓名</div>
+                <div class="form-value-group"><input type="text" id="ed-name"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-label">学号</div>
+                <div class="form-value-group"><input type="text" id="ed-sid"></div>
+            </div>
+        </div>
+        <div class="form-header">请假详情</div>
+        <div class="form-section">
+            <div class="form-row">
+                <div class="form-label">开始时间</div>
+                <div class="form-value-group"><input type="datetime-local" id="ed-start"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-label">结束时间</div>
+                <div class="form-value-group"><input type="datetime-local" id="ed-end"></div>
+            </div>
+            <div class="form-row" style="border-bottom:none;">
+                <div class="form-label">请假事由</div>
+            </div>
+            <div class="form-textarea-box">
+                <textarea class="form-textarea" id="ed-reason"></textarea>
+            </div>
+        </div>
+        <div class="submit-wrapper">
+            <div class="btn-submit" onclick="saveData()">提交修改</div>
+        </div>
+    </div>
+
+    <div id="mask">
+        <div class="modal">
+            <h3>安全验证</h3>
+            <input type="text" id="key-input" placeholder="输入卡密">
+            <div class="modal-btns">
+                <div class="btn" style="background:#eee; color:#666;" onclick="closeAuth()">取消</div>
+                <div class="btn" style="background:var(--primary-color); color:white" onclick="doAuth()">确认</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const AUTHORIZED_KEYS = new Set(["A7X9M2", "K4P8Q1", "R3N5T6", "B2W7Y8", "L9J4D3"]);
+    const DEFAULT_LIST = [
+        { id: 1, type: "周末在外留宿", start: "2026-04-20 15:30", end: "2026-04-22 19:23", days: "2.16天", name: "张三", sid: "2024000123", reason: "回家探亲" }
+    ];
+    let db = JSON.parse(localStorage.getItem('lea_sec_data_v2')) || DEFAULT_LIST;
+
+    function navigateTo(pageId) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById(pageId).classList.add('active');
+        window.scrollTo(0, 0);
+        if(pageId === 'page1') renderList();
+    }
+
+    function renderList() {
+        const container = document.getElementById('list-render');
+        container.innerHTML = db.map((item, index) => `
+            <div class="list-item" onclick="showDetail(${index})">
+                <div class="item-left">
+                    <div class="item-title">${item.type}</div>
+                    <div class="item-time">${item.start} 至 ${item.end.split(' ')[0].substring(5)}</div>
+                </div>
+                <div class="item-right">
+                    <div class="status"><div class="status-dot"></div>已通过</div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function showDetail(idx) {
+        const r = db[idx];
+        document.getElementById('detail-info').innerHTML = `
+            <div class="detail-row"><div class="detail-label">请假类型</div><div class="detail-value">${r.type}</div></div>
+            <div class="detail-row"><div class="detail-label">姓名</div><div class="detail-value">${r.name}</div></div>
+            <div class="detail-row"><div class="detail-label">学号</div><div class="detail-value">${r.sid}</div></div>
+            <div class="detail-row"><div class="detail-label">时间</div><div class="detail-value">${r.start} 至 ${r.end}</div></div>
+            <div class="detail-row"><div class="detail-label">事由</div><div class="detail-value">${r.reason}</div></div>
+        `;
+        navigateTo('page2');
+    }
+
+    function openAuth() { 
+        document.getElementById('key-input').value = '';
+        document.getElementById('mask').style.display = 'flex'; 
+    }
+    function closeAuth() { document.getElementById('mask').style.display = 'none'; }
+    function doAuth() {
+        const val = document.getElementById('key-input').value.trim().toUpperCase();
+        if(AUTHORIZED_KEYS.has(val)) {
+            closeAuth();
+            const r = db[0];
+            document.getElementById('ed-name').value = r.name;
+            document.getElementById('ed-sid').value = r.sid;
+            document.getElementById('ed-start').value = r.start.replace(' ', 'T');
+            document.getElementById('ed-end').value = r.end.replace(' ', 'T');
+            document.getElementById('ed-reason').value = r.reason;
+            navigateTo('page-edit');
+        } else {
+            alert("卡密验证失败");
+        }
+    }
+
+    function saveData() {
+        const sVal = document.getElementById('ed-start').value;
+        const eVal = document.getElementById('ed-end').value;
+        if(!sVal || !eVal) return alert("请设置起止时间");
+        
+        const d1 = new Date(sVal); 
+        const d2 = new Date(eVal);
+        const diff = d2 - d1;
+        if(diff <= 0) return alert("结束时间不能早于开始时间");
+
+        const pad = n => String(n).padStart(2, '0');
+        const fStr = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        
+        const newRec = {
+            ...db[0],
+            name: document.getElementById('ed-name').value,
+            sid: document.getElementById('ed-sid').value,
+            reason: document.getElementById('ed-reason').value,
+            start: fStr(d1), 
+            end: fStr(d2),
+            days: (diff/86400000).toFixed(2) + "天"
+        };
+        db.unshift(newRec);
+        localStorage.setItem('lea_sec_data_v2', JSON.stringify(db));
+        renderList();
+        navigateTo('page1');
+    }
+
+    document.addEventListener('DOMContentLoaded', renderList);
+</script>
+
+</body>
+</html>
